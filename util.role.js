@@ -2,17 +2,25 @@ const SPAWN = "SPAWN";
 const UPGRADE = "UPGRADE";
 const BUILD = "BUILD";
 
+const MAX_BUILD = 5;
+const MAX_SPAWN = 5;
+const MAX_UPGRADE = 3;
+
 deliveryType = {};
-deliveryType[SPAWN] = 4;
-deliveryType[UPGRADE] = 3;
-deliveryType[BUILD] = 0;  // set dynamically depending on pendingBuildings
+deliveryType[SPAWN] = MAX_SPAWN;
+deliveryType[UPGRADE] = MAX_UPGRADE;
+deliveryType[BUILD] = MAX_BUILD;  // set dynamically depending on pendingBuildings
 
 deliverDecision = function(creep, pendingBuildings) {
     if (pendingBuildings) {
-        deliveryType[BUILD] = 5;
+        deliveryType[BUILD] = MAX_BUILD;
     } else {
         deliveryType[BUILD] = 0;
     }
+    var energyNeed = (1 - creep.room.energyAvailable / creep.room.energyCapacityAvailable);
+    deliveryType[SPAWN] = Math.round(MAX_SPAWN * energyNeed) + 1;
+    console.log(JSON.stringify(deliveryType));
+    
     var mod = creep.ticksToLive % _.sum(deliveryType);
     var acc = 0;
     var target;
@@ -33,12 +41,20 @@ deliver = function (creep, target) {
             const energySinks = creep.room.find(FIND_MY_STRUCTURES, {
                 filter: s => s.energy < s.energyCapacity
             });
+            if (!energySinks) {
+                creep.memory.delivery = false;
+                break;
+            }
             if(creep.transfer(energySinks[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(energySinks[0]);
             }
             break;
         case BUILD:
             var sites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
+            if (!sites) {
+                creep.memory.delivery = false;
+                break;
+            }
             if(creep.build(sites[0]) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(sites[0]);
             }
