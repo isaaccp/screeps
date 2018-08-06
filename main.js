@@ -1,4 +1,4 @@
-var roles = ['harvester', 'builder', 'upgrader', 'delivery'];
+var roles = ['delivery'];
 var roleModules = {};
 for (var role in roles) {
     roleModules[roles[role]] = require('role.' + roles[role]);
@@ -13,10 +13,7 @@ bodyCost = function(body) {
 const MIN_BODY = [WORK, CARRY, MOVE];
 const MIN_COST = bodyCost(MIN_BODY);
 const DESIRED_CREEPS_BY_ROLE = [
-    {role: 'delivery', count : 17},
-    {role: 'harvester', count: 0},
-    {role: 'upgrader', count: 0},
-    {role: 'builder', count: 0},
+    {role: 'delivery', count : 15},
 ];
 
 creepBuilder = function (room, role) {
@@ -38,9 +35,6 @@ creepBuilder = function (room, role) {
     }
     
     switch (role) {
-        case 'harvester':
-        case 'upgrader':
-        case 'builder':
         case 'delivery':
             extend([MOVE], limit=1);
             extend([WORK, CARRY, MOVE, MOVE]);

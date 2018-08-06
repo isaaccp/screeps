@@ -16,8 +16,6 @@ deliveryType[REPAIR] = MAX_REPAIR;
 
 // TODO: Differentiate between energy for spawn vs energy for e.g. towers
 // TODO: Focus repair on most damaged structures
-// TODO: Decide final target for deliver in deliverDecision, not just the type,
-// to prevent switching between targets too many times.
 // TODO: Do something similar for sources, less urgent as it's less impactful
 // for now.
 deliverDecision = function(creep, pendingBuildings) {
@@ -79,6 +77,9 @@ deliver = function (creep, target) {
                     // TODO: Maybe prioritize ramparts, by multiplying by a 
                     // factor.
                     var left = r.hits / r.hitsMax;
+                    if (r.structureType == STRUCTURE_RAMPART) {
+                        left /= 80;
+                    }
                     if (left < minLeft) {
                         minLeft = left;
                         mostDamaged = r;
