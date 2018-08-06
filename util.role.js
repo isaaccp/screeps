@@ -1,15 +1,18 @@
 const SPAWN = "SPAWN";
 const UPGRADE = "UPGRADE";
 const BUILD = "BUILD";
+const REPAIR = "REPAIR";
 
 const MAX_BUILD = 5;
 const MAX_SPAWN = 5;
 const MAX_UPGRADE = 3;
+const MAX_REPAIR = 2;
 
 deliveryType = {};
 deliveryType[SPAWN] = MAX_SPAWN;
 deliveryType[UPGRADE] = MAX_UPGRADE;
 deliveryType[BUILD] = MAX_BUILD;  // set dynamically depending on pendingBuildings
+deliveryType[REPAIR] = MAX_REPAIR;
 
 deliverDecision = function(creep, pendingBuildings) {
     if (pendingBuildings) {
@@ -19,8 +22,8 @@ deliverDecision = function(creep, pendingBuildings) {
     }
     var energyNeed = (1 - creep.room.energyAvailable / creep.room.energyCapacityAvailable);
     deliveryType[SPAWN] = Math.round(MAX_SPAWN * energyNeed) + 1;
-    console.log(JSON.stringify(deliveryType));
-    
+    // console.log(JSON.stringify(deliveryType));
+
     var mod = creep.ticksToLive % _.sum(deliveryType);
     var acc = 0;
     var target;
@@ -28,7 +31,7 @@ deliverDecision = function(creep, pendingBuildings) {
         acc += chance;
         if (mod < acc) {
             target = t;
-            console.log("Mod: ", mod, "Target: ", target);
+            //console.log("Mod: ", mod, "Target: ", target);
             return false;
         }
     });
@@ -41,7 +44,7 @@ deliver = function (creep, target) {
             const energySinks = creep.room.find(FIND_MY_STRUCTURES, {
                 filter: s => s.energy < s.energyCapacity
             });
-            if (!energySinks) {
+            if (!energySinks.length) {
                 creep.memory.delivery = false;
                 break;
             }
@@ -51,12 +54,20 @@ deliver = function (creep, target) {
             break;
         case BUILD:
             var sites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
-            if (!sites) {
+            if (!sites.length) {
                 creep.memory.delivery = false;
                 break;
             }
             if(creep.build(sites[0]) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(sites[0]);
+            }
+            break;
+        case REPAIR:
+            const repairs = creep.room.find(FIND_STRUCTURES, {
+                filter: s => s.hits < s.hitsMax
+            });
+            if(creep.repair(repairs[0]) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(repairs[0]);
             }
             break;
         case UPGRADE:

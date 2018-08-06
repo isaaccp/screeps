@@ -4,6 +4,7 @@ for (var role in roles) {
     roleModules[roles[role]] = require('role.' + roles[role]);
 }
 var utilRole = require('util.role');
+var tower = require('structure.tower');
 
 bodyCost = function(body) {
     return _.sum(body, p => BODYPART_COST[p.type || p]);
@@ -12,7 +13,7 @@ bodyCost = function(body) {
 const MIN_BODY = [WORK, CARRY, MOVE];
 const MIN_COST = bodyCost(MIN_BODY);
 const DESIRED_CREEPS_BY_ROLE = [
-    {role: 'delivery', count : 15},
+    {role: 'delivery', count : 17},
     {role: 'harvester', count: 0},
     {role: 'upgrader', count: 0},
     {role: 'builder', count: 0},
@@ -55,8 +56,6 @@ module.exports.loop = function () {
     var room = Game.spawns['Spawn1'].room;
     utilRole.pendingBuildings = room.find(FIND_MY_CONSTRUCTION_SITES).length;
     
-
-    
     var creepsByRole = {};
     for(var name in Game.creeps) {
         var creep = Game.creeps[name];
@@ -75,6 +74,14 @@ module.exports.loop = function () {
         }
     });
     
+    for (var name in Game.structures) {
+        var s = Game.structures[name];
+        switch (s.structureType) {
+            case STRUCTURE_TOWER:
+                tower.run(s);
+                break;
+        }
+    }
     if ((Game.time % 10) == 0) {
         for(var i in Memory.creeps) {
             if(!Game.creeps[i]) {
