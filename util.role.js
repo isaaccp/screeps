@@ -4,8 +4,8 @@ const BUILD = "BUILD";
 const REPAIR = "REPAIR";
 
 const MAX_BUILD = 5;
-const MAX_SPAWN = 5;
-const MAX_UPGRADE = 3;
+const MAX_SPAWN = 8;
+const MAX_UPGRADE = 4;
 const MAX_REPAIR = 2;
 
 deliveryType = {};
@@ -14,6 +14,12 @@ deliveryType[UPGRADE] = MAX_UPGRADE;
 deliveryType[BUILD] = MAX_BUILD;  // set dynamically depending on pendingBuildings
 deliveryType[REPAIR] = MAX_REPAIR;
 
+// TODO: Differentiate between energy for spawn vs energy for e.g. towers
+// TODO: Focus repair on most damaged structures
+// TODO: Decide final target for deliver in deliverDecision, not just the type,
+// to prevent switching between targets too many times.
+// TODO: Do something similar for sources, less urgent as it's less impactful
+// for now.
 deliverDecision = function(creep, pendingBuildings) {
     if (pendingBuildings) {
         deliveryType[BUILD] = MAX_BUILD;
@@ -63,11 +69,33 @@ deliver = function (creep, target) {
             }
             break;
         case REPAIR:
-            const repairs = creep.room.find(FIND_STRUCTURES, {
-                filter: s => s.hits < s.hitsMax
-            });
-            if(creep.repair(repairs[0]) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(repairs[0]);
+            if (!creep.memory.destination) {
+                const repairs = creep.room.find(FIND_STRUCTURES, {
+                    filter: s => s.hits < s.hitsMax
+                });
+                var mostDamaged;
+                var minLeft = 1;
+                _.forEach(repairs, (r) => {
+                    // TODO: Maybe prioritize ramparts, by multiplying by a 
+                    // factor.
+                    var left = r.hits / r.hitsMax;
+                    if (left < minLeft) {
+                        minLeft = left;
+                        mostDamaged = r;
+                    }
+                });
+                creep.memory.destination = mostDamaged.id;
+            }
+            var toRepair = Game.getObjectById(creep.memory.destination);
+            var status = creep.repair(toRepair);
+            switch (status) {
+                case OK:
+                    break;
+                case ERR_NOT_IN_RANGE:
+                    creep.moveTo(toRepair);
+                    break;
+                default:
+                    delete creep.memory.destination;
             }
             break;
         case UPGRADE:
@@ -98,6 +126,7 @@ module.exports = {
                 deliver(creep, creep.memory.target);
             } else {
                 creep.memory.delivery = false;
+                delete creep.memory.destination;
             }
         }
 	},
