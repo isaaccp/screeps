@@ -10,7 +10,10 @@ bodyCost = function(body) {
     return _.sum(body, p => BODYPART_COST[p.type || p]);
 }
 
-const MIN_BODY = [MOVE];
+const MIN_BODY = {
+    'melee': [MOVE, ATTACK],
+    'delivery': [MOVE, CARRY, WORK],
+};
 const MIN_COST = bodyCost(MIN_BODY);
 const DESIRED_CREEPS_BY_ROLE = [
     {role: 'delivery', count : 15},
@@ -18,8 +21,9 @@ const DESIRED_CREEPS_BY_ROLE = [
 
 creepBuilder = function (room, role) {
     var energy = room.energyAvailable;
-    var cost = MIN_COST;
-    var body = MIN_BODY.slice();
+
+    var body = MIN_BODY[role].slice();
+    var cost = bodyCost(body);
     
     var extend = function(parts, limit=0) {
         let c = bodyCost(parts);
@@ -36,7 +40,6 @@ creepBuilder = function (room, role) {
     
     switch (role) {
         case 'melee':
-            extend([MOVE], limit=1);
             extend([ATTACK, MOVE, TOUGH, TOUGH, TOUGH]);
             extend([TOUGH]);
             break;
@@ -50,7 +53,7 @@ creepBuilder = function (room, role) {
     // This is so most of the extra TOUGH is at the beginning, although it could
     // be made better by sorting all the TOUGH at the beginning explicitly.
     body.reverse();
-    
+
     return body;
 }
 
