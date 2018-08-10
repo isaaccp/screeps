@@ -1,3 +1,5 @@
+var findUtil = require('util.find');
+
 const SPAWN = "SPAWN";
 const UPGRADE = "UPGRADE";
 const BUILD = "BUILD";
@@ -71,26 +73,10 @@ deliver = function (creep, target) {
             break;
         case REPAIR:
             if (!creep.memory.destination) {
-                const repairs = creep.room.find(FIND_STRUCTURES, {
-                    filter: s => s.hits < s.hitsMax
-                });
-                var mostDamaged;
-                var minLeft = 1;
-                _.forEach(repairs, (r) => {
-                    // TODO: Maybe prioritize ramparts, by multiplying by a 
-                    // factor.
-                    var left = r.hits / r.hitsMax;
-                    if (r.structureType == STRUCTURE_RAMPART) {
-                        left /= 80;
-                    } else if (r.structureType == STRUCTURE_ROAD) {
-                        left /= 50;
-                    }
-                    if (left < minLeft) {
-                        minLeft = left;
-                        mostDamaged = r;
-                    }
-                });
-                creep.memory.destination = mostDamaged.id;
+                var mostDamaged = findUtil.findMostDamaged(creep.room);
+                if (mostDamaged) {
+                    creep.memory.destination = mostDamaged.id;
+                }
             }
             var toRepair = Game.getObjectById(creep.memory.destination);
             if (toRepair == null || toRepair.hits == toRepair.maxHits) {

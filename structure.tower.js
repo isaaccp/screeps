@@ -1,11 +1,21 @@
-var structure = {
+var findUtil = require('util.find');
 
+var tower = {
     /** @param {Creep} creep **/
-    run: function(structure) {
-        var hostile = structure.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
-        if (!hostile) return;
-        structure.attack(hostile);
+    run: function(tower) {
+        var hostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+        if (hostile) {
+            tower.attack(hostile);
+            return;
+        }
+        if ((tower.energy / tower.energyCapacity) > 0.8) {
+            var mostDamaged = findUtil.findMostDamaged(tower.room);
+            if (mostDamaged) {
+                tower.repair(mostDamaged);
+            }
+        }
+        
 	}
 };
 
-module.exports = structure;
+module.exports = tower;
