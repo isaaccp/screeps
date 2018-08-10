@@ -26,7 +26,11 @@ deliverDecision = function(creep, pendingBuildings) {
     }
     var energyNeed = (1 - creep.room.energyAvailable / creep.room.energyCapacityAvailable);
     deliveryType[SPAWN] = Math.round(MAX_SPAWN * energyNeed) + 1;
-    // console.log(JSON.stringify(deliveryType));
+    var hostile = creep.room.find(FIND_HOSTILE_CREEPS);
+    if (hostile.length) {
+        deliveryType[BUILD] = 0;
+        deliveryType[UPGRADE] = 1;
+    }
 
     var mod = creep.ticksToLive % _.sum(deliveryType);
     var acc = 0;
@@ -35,7 +39,6 @@ deliverDecision = function(creep, pendingBuildings) {
         acc += chance;
         if (mod < acc) {
             target = t;
-            //console.log("Mod: ", mod, "Target: ", target);
             return false;
         }
     });
@@ -79,6 +82,8 @@ deliver = function (creep, target) {
                     var left = r.hits / r.hitsMax;
                     if (r.structureType == STRUCTURE_RAMPART) {
                         left /= 80;
+                    } else if (r.structureType == STRUCTURE_ROAD) {
+                        left /= 50;
                     }
                     if (left < minLeft) {
                         minLeft = left;
@@ -88,6 +93,11 @@ deliver = function (creep, target) {
                 creep.memory.destination = mostDamaged.id;
             }
             var toRepair = Game.getObjectById(creep.memory.destination);
+            if (toRepair == null || toRepair.hits == toRepair.maxHits) {
+                delete creep.memory.destination;
+                delete creep.memory.target;
+                break;
+            }
             var status = creep.repair(toRepair);
             switch (status) {
                 case OK:
@@ -97,6 +107,7 @@ deliver = function (creep, target) {
                     break;
                 default:
                     delete creep.memory.destination;
+                    delete creep.memory.target;
             }
             break;
         case UPGRADE:

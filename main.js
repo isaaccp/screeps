@@ -1,4 +1,4 @@
-var roles = ['delivery'];
+var roles = ['delivery', 'melee'];
 var roleModules = {};
 for (var role in roles) {
     roleModules[roles[role]] = require('role.' + roles[role]);
@@ -10,7 +10,7 @@ bodyCost = function(body) {
     return _.sum(body, p => BODYPART_COST[p.type || p]);
 }
 
-const MIN_BODY = [WORK, CARRY, MOVE];
+const MIN_BODY = [MOVE];
 const MIN_COST = bodyCost(MIN_BODY);
 const DESIRED_CREEPS_BY_ROLE = [
     {role: 'delivery', count : 15},
@@ -35,13 +35,21 @@ creepBuilder = function (room, role) {
     }
     
     switch (role) {
-        case 'delivery':
+        case 'melee':
             extend([MOVE], limit=1);
-            extend([WORK, CARRY, MOVE, MOVE]);
+            extend([ATTACK, MOVE, TOUGH, TOUGH, TOUGH]);
+            extend([TOUGH]);
+            break;
+        case 'delivery':
+            extend([MOVE, WORK, CARRY, MOVE]);
             extend([WORK, MOVE], limit=1);
             extend([CARRY, MOVE])
             break;
     }
+    
+    // This is so most of the extra TOUGH is at the beginning, although it could
+    // be made better by sorting all the TOUGH at the beginning explicitly.
+    body.reverse();
     
     return body;
 }
@@ -60,7 +68,15 @@ module.exports.loop = function () {
             creepsByRole[creep.memory.role] = 1;
         }
     }
-    _.forEach(DESIRED_CREEPS_BY_ROLE, (desired) => {
+    
+    var desiredCreepsByRole = DESIRED_CREEPS_BY_ROLE.slice();
+    
+    var hostile = room.find(FIND_HOSTILE_CREEPS);
+    if (hostile.length) {
+        desiredCreepsByRole.push({'role': 'melee', 'count': 5});
+    }
+
+    _.forEach(desiredCreepsByRole, (desired) => {
         if ((creepsByRole[desired.role] || 0) < desired.count ) {
             var body = creepBuilder(room, desired.role)
             Game.spawns['Spawn1'].spawnCreep(body, desired.role + Game.time, { memory: { role: desired.role } } );
